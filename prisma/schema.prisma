@@ -17,7 +17,9 @@ model users{
   id Int  @id @default(autoincrement())
   name String
   email String @unique
-  address String @default("") @db.Text
+  address String? @db.Text
+  avatar String? 
+  password String
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }

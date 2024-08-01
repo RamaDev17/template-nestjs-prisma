@@ -2,10 +2,14 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { LoginDto, RegisterDto } from './dto/register-dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+  ) {}
   async register(data: RegisterDto) {
     const checkUserExist = await this.prisma.users.findUnique({
       where: { email: data.email },
@@ -43,8 +47,10 @@ export class AuthService {
       throw new HttpException('Login failed', 400);
     }
 
+    const payload = { sub: user.id, email: user.email };
     return {
       statusCode: 200,
+      token: await this.jwt.signAsync(payload),
       message: 'Login successfully',
     };
   }

@@ -54,4 +54,29 @@ export class AuthService {
       message: 'Login successfully',
     };
   }
+
+  async profile(userId: number) {
+    const user = await this.prisma.users.findFirst({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        address: true,
+        avatar: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
+    if (!user) {
+      throw new HttpException('Profile not found', 404);
+    }
+
+    return {
+      message: 'Get profile successfully',
+      statusCode: 200,
+      data: user,
+    };
+  }
 }

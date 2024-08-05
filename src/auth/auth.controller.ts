@@ -8,6 +8,8 @@ import {
   Req,
   UploadedFile,
   UseInterceptors,
+  Put,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, UpdateProfileDto } from './dto/register-dto';
@@ -35,11 +37,11 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @Get('profile')
   async profile(@Req() req) {
-    return await this.authService.profile(req.id);
+    return await this.authService.profile(req.user.id);
   }
 
   @UseGuards(AuthGuard)
-  @Post('update-profile')
+  @Put('update-profile')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -51,13 +53,27 @@ export class AuthController {
           cb(null, `${uniqueSuffix}${ext}`);
         },
       }),
+      fileFilter: (req, file, cb) => {
+        const allowedFileTypes = /png|jpg|jpeg/;
+        const ext = extname(file.originalname).toLowerCase();
+        if (!allowedFileTypes.test(ext)) {
+          return cb(new BadRequestException('Invalid file type'), false);
+        }
+        cb(null, true);
+      },
     }),
   )
   async updateProfile(
     @Req() req,
     @Body() data: UpdateProfileDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile()
+    file: Express.Multer.File,
   ) {
+    const size = req.headers['content-length'] / 1024 / 1024;
+    if (size > 2) {
+      throw new BadRequestException('File size is too large, max 2mb');
+    }
+
     return await this.authService.updateProfile(req.user.id, data, file);
   }
 }

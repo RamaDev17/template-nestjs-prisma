@@ -3,6 +3,7 @@ import { LoginDto, RegisterDto, UpdateProfileDto } from './dto/register-dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import * as fs from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -73,6 +74,10 @@ export class AuthService {
       throw new HttpException('Profile not found', 404);
     }
 
+    if (user.avatar) {
+      user.avatar = `${process.env.BE_URL}/uploads/profiles/${user.avatar}`;
+    }
+
     return {
       message: 'Get profile successfully',
       statusCode: 200,
@@ -88,8 +93,17 @@ export class AuthService {
     const user = await this.prisma.users.findFirst({
       where: { id: userId },
     });
+
     if (!user) {
       throw new HttpException('Profile not found', 404);
+    }
+
+    if (user.avatar && file) {
+      // delete old avatar
+      const path = `./public/uploads/profiles/${user.avatar}`;
+      if (fs.existsSync(path)) {
+        fs.unlinkSync(path);
+      }
     }
 
     if (file) {

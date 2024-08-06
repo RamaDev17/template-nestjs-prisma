@@ -17,7 +17,9 @@ import { AuthGuard } from './auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -34,13 +36,29 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard)
   @Get('profile')
   async profile(@Req() req) {
     return await this.authService.profile(req.user.id);
   }
 
+  @ApiBearerAuth('accessToken')
   @UseGuards(AuthGuard)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        address: { type: 'string' },
+        avatar: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
   @Put('update-profile')
   @UseInterceptors(
     FileInterceptor('file', {
